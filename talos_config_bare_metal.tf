@@ -46,11 +46,13 @@ locals {
           local.network_public_ipv4_enabled ? [
             {
               gateway = local.bare_metal_server_public_network[server_name].server_ipv4_gateway
+              metric  = 512
             }
           ] : [],
           local.bare_metal_public_ipv6_enabled[server_name] ? [
             {
               gateway = "fe80::1"
+              metric  = 512
             }
           ] : []
         )
