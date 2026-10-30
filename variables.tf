@@ -502,15 +502,16 @@ variable "bare_metal_nodepools" {
       install_raid_level   = optional(string)
       preserve_other_disks = optional(bool, false)
     }))
-    labels      = optional(map(string), {})
-    annotations = optional(map(string), {})
-    taints      = optional(list(string), [])
-    rdns        = optional(string)
-    rdns_ipv4   = optional(string)
-    rdns_ipv6   = optional(string)
+    labels         = optional(map(string), {})
+    annotations    = optional(map(string), {})
+    taints         = optional(list(string), [])
+    rdns           = optional(string)
+    rdns_ipv4      = optional(string)
+    rdns_ipv6      = optional(string)
+    config_patches = optional(list(string), [])
   }))
   default     = []
-  description = "Defines configuration settings for Hetzner bare metal Worker node pools."
+  description = "Defines configuration settings for Hetzner bare metal Worker node pools. config_patches are YAML Talos configuration patches applied after bare_metal_config_patches to that pool's servers only."
 
   validation {
     condition     = length(var.bare_metal_nodepools) == length(distinct([for np in var.bare_metal_nodepools : np.name]))
