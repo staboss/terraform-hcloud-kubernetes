@@ -1670,6 +1670,12 @@ variable "hcloud_vswitch_id" {
   }
 }
 
+variable "hcloud_vswitch_extra_server_numbers" {
+  type        = list(number)
+  default     = []
+  description = "Robot servers attached to the vSwitch besides the bare-metal nodepools; the module never detaches them."
+}
+
 # Hetzner Cloud Controller Manager (CCM)
 variable "hcloud_ccm_enabled" {
   type        = bool
