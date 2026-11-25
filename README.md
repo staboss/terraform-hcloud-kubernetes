@@ -310,6 +310,14 @@ echo "cidrsubnet(\"10.0.0.0/16\", 9, 176)" | tofu console
 "10.0.88.0/25"
 ```
 
+Whenever the list of bare metal servers changes, the module also detaches every other server attached to the vSwitch. To keep other Robot servers on it, for example hosts that are not Kubernetes nodes but use the private network, list them:
+
+```hcl
+hcloud_vswitch_extra_server_numbers = [3333333]
+```
+
+The module attaches these servers and keeps them attached, but does not install, configure or reset them. Removing a server from the list detaches it. The list is ignored when `bare_metal_nodepools` is empty.
+
 When bare metal servers are enabled for the first time, Cilium might need to be restarted to pick up the changed routing mode:
 
 ```sh

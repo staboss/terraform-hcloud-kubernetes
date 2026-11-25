@@ -1671,6 +1671,12 @@ variable "hcloud_vswitch_id" {
   }
 }
 
+variable "hcloud_vswitch_extra_server_numbers" {
+  type        = list(number)
+  default     = []
+  description = "Hetzner Robot server numbers to attach to the vSwitch and keep attached in addition to the bare metal nodepool servers. They are not configured as Kubernetes nodes. Ignored when bare_metal_nodepools is empty."
+}
+
 # Hetzner Cloud Controller Manager (CCM)
 variable "hcloud_ccm_enabled" {
   type        = bool

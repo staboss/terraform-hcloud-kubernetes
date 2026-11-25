@@ -217,8 +217,11 @@ resource "terraform_data" "vswitch_attachment" {
   count = local.bare_metal_enabled && var.hcloud_robot_user != null ? 1 : 0
 
   triggers_replace = {
-    vswitch_id     = local.hcloud_vswitch_id
-    server_numbers = sort([for server in local.bare_metal_servers : tostring(server.number)])
+    vswitch_id = local.hcloud_vswitch_id
+    server_numbers = sort(distinct(concat(
+      [for server in local.bare_metal_servers : tostring(server.number)],
+      [for number in var.hcloud_vswitch_extra_server_numbers : tostring(number)]
+    )))
   }
 
   provisioner "local-exec" {
