@@ -421,7 +421,9 @@ servers = [
 
 #### External Nodes
 
-Machines the module does not provision, for example virtual machines on a host attached to the vSwitch, join as worker nodes through `external_nodepools`. Each machine boots the amd64 Talos `nocloud` image of its pool's `schematic_id` into maintenance mode and takes its network from the platform (for example cloud-init network-config), with `private_ipv4` in the shared bare metal subnet and the Talos API reachable from where the module runs; the module configures no network on them. The module applies the worker configuration to `private_ipv4`, which installs Talos to the disk with serial `install_disk_serial`, applies it again when the server's `machine_id` changes (set it to a value that changes when the machine is recreated), and upgrades the node when `talos_version` or `schematic_id` changes:
+Machines the module does not provision, for example virtual machines on a host attached to the vSwitch, join as worker nodes through `external_nodepools`, which requires `bare_metal_nodepools`. Each machine boots the amd64 Talos `nocloud` image of its pool's `schematic_id` into maintenance mode. It takes its network from the platform, for example cloud-init network-config: `private_ipv4` in the shared bare metal subnet, MTU 1400 and a route to the cluster network via the vSwitch gateway, with the Talos API reachable from where the module runs. The module configures no links, addresses or routes on these nodes; `talos_nameservers` and `talos_ntp_servers` still apply.
+
+The module applies the worker configuration to `private_ipv4`, which installs Talos to the disk with serial `install_disk_serial`. It applies the configuration again when the server's `machine_id` changes, so set it to a value that changes when the machine is recreated, and upgrades the node when `talos_version` or `schematic_id` changes:
 
 ```hcl
 external_nodepools = [
@@ -431,7 +433,7 @@ external_nodepools = [
     servers = [
       {
         name                = "external-1"
-        private_ipv4        = "10.0.88.66"
+        private_ipv4        = "10.0.88.10"
         provider_id         = "external://external-1"
         install_disk_serial = "<disk-serial>"
         machine_id          = "<machine-id>"
@@ -442,9 +444,11 @@ external_nodepools = [
 ]
 ```
 
-The server `name` becomes the hostname and the Kubernetes node name. The kubelet runs with the given `provider_id` and without `cloud-provider=external`; with a prefix other than `hcloud://` and `hrobot://` the Hetzner Cloud Controller Manager cannot look the node up and leaves it in place, also while it is NotReady. `talos_extra_routes` does not apply to external nodes. The pool's `config_patches` are applied last; `bare_metal_config_patches` does not apply to external nodes.
+The server `name` becomes the hostname and the Kubernetes node name. The kubelet runs with the given `provider_id` and without `cloud-provider=external`. With a prefix other than `hcloud://` and `hrobot://`, the Hetzner Cloud Controller Manager cannot look the node up: it leaves the node in place, also while it is NotReady, sets no zone or region labels and skips it as a load balancer target. With `hcloud_csi_enabled`, the Hetzner CSI node plugin is scheduled on external nodes too, although it needs the Hetzner Cloud metadata service; `node.affinity` in `hcloud_csi_helm_values` can exclude them.
 
-Add external servers in an apply that upgrades no node: the upgrade health checks expect every listed node to be a cluster member. External nodes are not rebooted by `talos_staged_configuration_automatic_reboot_enabled`. Removing a server neither resets the machine nor deletes its Node: delete the Node before the next upgrade, since the upgrade health checks fail on nodes they do not expect.
+The pool's `schematic_id` replaces `talos_image_extensions` and `talos_extra_kernel_args`, so it must contain every extension and kernel argument the nodes need. `talos_extra_routes` and `bare_metal_config_patches` do not apply to external nodes; the pool's `config_patches` are applied last. External pools cannot be combined with `longhorn_enabled` or `talos_kubelet_extra_mounts`.
+
+Add or recreate external servers in an apply that upgrades neither Talos nor Kubernetes: the upgrade health checks run before the new machine is configured and expect every listed node to be a cluster member. External nodes are not rebooted by `talos_staged_configuration_automatic_reboot_enabled`. Removing a server neither resets the machine nor deletes its Node: delete the Node before the next upgrade, since the upgrade health checks fail on nodes they do not expect. Each time the module attaches the bare metal servers to the vSwitch, first and whenever their list changes, it detaches every other Robot server from it, including a host that runs external machines, unless `hcloud_vswitch_extra_server_numbers` lists it.
 
 </details>
 

@@ -615,6 +615,7 @@ resource "terraform_data" "talos_machine_configuration_apply_cluster_autoscaler"
     talos_machine_configuration_apply.control_plane,
     talos_machine_configuration_apply.worker,
     talos_machine_configuration_apply.bare_metal,
+    talos_machine_configuration_apply.external,
     terraform_data.talos_staged_configuration_reboot_control_plane,
     terraform_data.talos_staged_configuration_reboot_worker
   ]
