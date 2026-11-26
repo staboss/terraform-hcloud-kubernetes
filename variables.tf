@@ -662,7 +662,7 @@ variable "external_nodepools" {
     config_patches = optional(list(string), [])
   }))
   default     = []
-  description = "Defines Worker node pools of amd64 machines the module does not provision. They boot the Talos nocloud image of the pool's schematic_id into maintenance mode, their network from the platform with private_ipv4 in the shared bare metal subnet; the module applies their Talos configuration over private_ipv4, which installs Talos to the disk with install_disk_serial, applies it again when machine_id changes, and upgrades them."
+  description = "Defines Worker node pools of amd64 machines the module does not provision. They boot the Talos nocloud image of the pool's schematic_id into maintenance mode and take their network from the platform, with private_ipv4 in the shared bare metal subnet; the module applies their Talos configuration over private_ipv4, which installs Talos to the disk with install_disk_serial, applies it again when machine_id changes, and upgrades them."
 
   validation {
     condition     = length(var.external_nodepools) == 0 || length(var.bare_metal_nodepools) > 0

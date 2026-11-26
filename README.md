@@ -421,7 +421,7 @@ servers = [
 
 #### External Nodes
 
-Machines the module does not provision, for example virtual machines on a host attached to the vSwitch, join as worker nodes through `external_nodepools`. Each machine boots the amd64 Talos `nocloud` image of its pool's `schematic_id` into maintenance mode, its network from the platform (for example cloud-init network-config) with `private_ipv4` in the shared bare metal subnet and the Talos API reachable from where the module runs; the module configures no network on them. The module applies the worker configuration to `private_ipv4`, which installs Talos to the disk with serial `install_disk_serial`, applies it again when the server's `machine_id` changes (set it to a value that changes when the machine is recreated), and upgrades the node when `talos_version` or `schematic_id` changes:
+Machines the module does not provision, for example virtual machines on a host attached to the vSwitch, join as worker nodes through `external_nodepools`. Each machine boots the amd64 Talos `nocloud` image of its pool's `schematic_id` into maintenance mode and takes its network from the platform (for example cloud-init network-config), with `private_ipv4` in the shared bare metal subnet and the Talos API reachable from where the module runs; the module configures no network on them. The module applies the worker configuration to `private_ipv4`, which installs Talos to the disk with serial `install_disk_serial`, applies it again when the server's `machine_id` changes (set it to a value that changes when the machine is recreated), and upgrades the node when `talos_version` or `schematic_id` changes:
 
 ```hcl
 external_nodepools = [
@@ -434,7 +434,7 @@ external_nodepools = [
         private_ipv4        = "10.0.88.66"
         provider_id         = "external://external-1"
         install_disk_serial = "<disk-serial>"
-        machine_id          = "<mac-address>"
+        machine_id          = "<machine-id>"
       }
     ]
     taints = ["nodepool=external:NoSchedule"]
