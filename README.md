@@ -419,6 +419,33 @@ servers = [
 
 > ⚠️ **Warning:** Installing Talos is destructive. By default, every eligible disk is wiped to prevent the server from booting a previous installation, and all data on those disks is lost. Preserved disks can still contain bootable installations, so the firmware might boot from them. RAID configuration is used only during initial provisioning; changing it does not reprovision existing servers.
 
+#### External Nodes
+
+Machines the module does not provision, for example virtual machines on a host attached to the vSwitch, join as worker nodes through `external_nodepools`. Each machine boots the amd64 Talos `nocloud` image of its pool's `schematic_id` into maintenance mode, with `eth0` at its `private_ipv4` in the shared bare metal subnet and the Talos API reachable from where the module runs. The module applies the worker configuration to `private_ipv4`, which installs Talos to the disk with serial `install_disk_serial`, and upgrades the node when `talos_version` or `schematic_id` changes:
+
+```hcl
+external_nodepools = [
+  {
+    name            = "external"
+    schematic_id    = "<schematic-id>"
+    default_gateway = "10.0.88.65"
+    servers = [
+      {
+        name                = "external-1"
+        private_ipv4        = "10.0.88.66"
+        provider_id         = "external://external-1"
+        install_disk_serial = "<disk-serial>"
+      }
+    ]
+    taints = ["nodepool=external:NoSchedule"]
+  }
+]
+```
+
+The server `name` becomes the hostname and the Kubernetes node name. The kubelet runs with the given `provider_id` and without `cloud-provider=external`; with a prefix other than `hcloud://` and `hrobot://` the Hetzner Cloud Controller Manager cannot look the node up and leaves it in place, also while it is NotReady. `eth0` gets MTU 1400, a route to the network and `talos_extra_routes` via the vSwitch gateway, and the default route via `default_gateway`; a `0.0.0.0/0` entry in `talos_extra_routes` takes precedence over it. The pool's `config_patches` are applied last; `bare_metal_config_patches` does not apply to external nodes.
+
+Add external servers in an apply that upgrades no node: the upgrade health checks expect every listed node to be a cluster member. External nodes are not rebooted by `talos_staged_configuration_automatic_reboot_enabled`. Removing a server neither resets the machine nor deletes its Node: delete the Node before the next upgrade, since the upgrade health checks fail on nodes they do not expect.
+
 </details>
 
 <!-- Cluster Access -->

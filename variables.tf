@@ -646,6 +646,82 @@ variable "bare_metal_nodepools" {
   }
 }
 
+variable "external_nodepools" {
+  type = list(object({
+    name            = string
+    schematic_id    = string
+    default_gateway = string
+    servers = list(object({
+      name                = string
+      private_ipv4        = string
+      provider_id         = string
+      install_disk_serial = string
+    }))
+    labels         = optional(map(string), {})
+    taints         = optional(list(string), [])
+    config_patches = optional(list(string), [])
+  }))
+  default     = []
+  description = "Defines Worker node pools of amd64 machines the module does not provision. They boot the Talos nocloud image of the pool's schematic_id into maintenance mode with eth0 in the shared bare metal subnet; the module applies their Talos configuration over private_ipv4, which installs Talos to the disk with install_disk_serial, and upgrades them."
+
+  validation {
+    condition     = length(var.external_nodepools) == 0 || length(var.bare_metal_nodepools) > 0
+    error_message = "External nodepools join through the shared bare metal subnet and require bare_metal_nodepools."
+  }
+
+  validation {
+    condition     = length(var.external_nodepools) == length(distinct([for np in var.external_nodepools : np.name]))
+    error_message = "External nodepool names must be unique to avoid configuration conflicts."
+  }
+
+  validation {
+    condition = length(flatten([
+      for np in var.external_nodepools : [for server in np.servers : server.name]
+      ])) == length(distinct(flatten([
+        for np in var.external_nodepools : [for server in np.servers : server.name]
+    ])))
+    error_message = "External server names must be unique to avoid configuration conflicts."
+  }
+
+  validation {
+    condition = length(var.external_nodepools) == 0 || length(flatten(concat(
+      [for np in var.bare_metal_nodepools : [for server in np.servers : server.private_ipv4]],
+      [for np in var.external_nodepools : [for server in np.servers : server.private_ipv4]]
+      ))) == length(distinct(flatten(concat(
+        [for np in var.bare_metal_nodepools : [for server in np.servers : server.private_ipv4]],
+        [for np in var.external_nodepools : [for server in np.servers : server.private_ipv4]]
+    ))))
+    error_message = "External server private IPv4 addresses must be unique and must not be used by bare metal servers."
+  }
+
+  validation {
+    condition = alltrue(flatten([
+      for np in var.external_nodepools : [
+        for server in np.servers : server.provider_id != "" && !startswith(server.provider_id, "hcloud://") && !startswith(server.provider_id, "hrobot://")
+      ]
+    ]))
+    error_message = "External server provider_id values must be set and must not start with hcloud:// or hrobot://, or the Hetzner Cloud Controller Manager can delete the node while it is NotReady."
+  }
+
+  validation {
+    condition = alltrue(flatten([
+      for np in var.external_nodepools : [
+        for server in np.servers : try(cidrhost("${server.private_ipv4}/${local.bare_metal_vswitch_ipv4_cidr_prefix_size}", 0) == cidrhost(local.network_bare_metal_shared_ipv4_cidr, 0), false) && !contains([
+          cidrhost(local.network_bare_metal_shared_ipv4_cidr, 0),
+          cidrhost(local.network_bare_metal_shared_ipv4_cidr, 1),
+          cidrhost(local.network_bare_metal_shared_ipv4_cidr, -1)
+        ], server.private_ipv4)
+      ]
+    ]))
+    error_message = "External server private_ipv4 values must be inside the shared bare metal subnet and must not use its network address, the vSwitch gateway or the broadcast address."
+  }
+
+  validation {
+    condition     = length(var.external_nodepools) == 0 || !local.talos_legacy_kubelet_config_enabled
+    error_message = "External nodepools do not support kubelet extra mounts (talos_kubelet_extra_mounts or longhorn_enabled)."
+  }
+}
+
 
 # Cluster Autoscaler
 variable "cluster_autoscaler_helm_repository" {
