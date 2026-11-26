@@ -96,10 +96,9 @@ locals {
 
   external_nodepools = [
     for np in var.external_nodepools : {
-      name            = np.name,
-      schematic_id    = np.schematic_id,
-      default_gateway = np.default_gateway,
-      servers         = np.servers,
+      name         = np.name,
+      schematic_id = np.schematic_id,
+      servers      = np.servers,
       labels = merge(
         np.labels,
         { nodepool = np.name }

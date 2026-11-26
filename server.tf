@@ -23,6 +23,7 @@ locals {
         private_ipv4        = server.private_ipv4,
         provider_id         = server.provider_id,
         install_disk_serial = server.install_disk_serial,
+        machine_id          = server.machine_id,
       }
     }
   ]...) : {}

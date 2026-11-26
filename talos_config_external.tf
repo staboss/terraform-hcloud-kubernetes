@@ -33,31 +33,6 @@ locals {
       ),
       {
         apiVersion = "v1alpha1"
-        kind       = "LinkConfig"
-        name       = "eth0"
-        up         = true
-        mtu        = 1400
-        addresses = [
-          {
-            address = "${server.private_ipv4}/${local.bare_metal_vswitch_ipv4_cidr_prefix_size}"
-          }
-        ]
-        routes = concat(
-          [
-            {
-              destination = local.network_ipv4_cidr
-              gateway     = local.bare_metal_vswitch_ipv4_gateway
-              metric      = 512
-            },
-            {
-              gateway = local.external_nodepools_map[server.nodepool].default_gateway
-            }
-          ],
-          local.bare_metal_extra_routes
-        )
-      },
-      {
-        apiVersion = "v1alpha1"
         kind       = "UnattendedInstallConfig"
         installer = {
           image = local.talos_external_installer_image_urls[server.nodepool]

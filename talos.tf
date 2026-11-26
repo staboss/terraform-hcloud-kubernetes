@@ -545,6 +545,12 @@ resource "terraform_data" "talos_staged_configuration_reboot_bare_metal" {
   ]
 }
 
+resource "terraform_data" "external_machine" {
+  for_each = local.external_servers
+
+  input = each.value.machine_id
+}
+
 resource "talos_machine_configuration_apply" "external" {
   for_each = local.external_servers
 
@@ -562,6 +568,11 @@ resource "talos_machine_configuration_apply" "external" {
     terraform_data.talos_staged_configuration_reboot_control_plane,
     terraform_data.talos_staged_configuration_reboot_worker
   ]
+
+  # A recreated machine boots into maintenance mode with the same inputs.
+  lifecycle {
+    replace_triggered_by = [terraform_data.external_machine[each.key]]
+  }
 }
 
 resource "terraform_data" "talos_machine_configuration_apply_cluster_autoscaler" {
